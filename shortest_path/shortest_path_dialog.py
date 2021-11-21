@@ -26,6 +26,14 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
+from qgis.core import QgsVectorLayer,QgsProject,QgsRasterLayer
+import qgis.utils
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from osgeo import ogr
+from osgeo import gdal
+import numpy as np
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -41,4 +49,50 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
+
         self.setupUi(self)
+
+        # 信号与槽函数
+        self.bt_loadsrc.clicked.connect(lambda: self.initlabel(self.line_src))
+        self.bt_loadcost.clicked.connect(lambda: self.initlabel(self.line_cost))
+        self.bt_export.clicked.connect(lambda: self.initlabel(self.line_export))
+        self.bt_cancel.clicked.connect(self.close)
+        # self.bt_ok.clicked.connect(self.ProcessMindis)
+        self.bt_ok.clicked.connect(self.MainProcess)
+
+    def initlabel(self,initobj):
+        if initobj==self.line_export:
+            ofd, filt = QFileDialog.getSaveFileName(self, '选择shapefile文件', './', 'Shapefile文件(*.shp);;ALL(*.*)')
+            initobj.setText(ofd)
+        else:
+            ofd, filt = QFileDialog.getOpenFileName(self, '选择shapefile文件', './', 'Shapefile文件(*.shp);;ALL(*.*)')
+            initobj.setText(ofd)
+
+    def ProcessMindis(self):
+        '''
+        这个函数不执行
+        这是把矢量/栅格图加载到QGIS上的例子
+        '''
+        path='D:/CTY/研一/学习/GIS应用/插件作业/Testdata/地级市.shp'
+        pathR='D:/CTY/研一/学习/GIS应用/插件作业/Testdata/dem1.tif'
+        name='地级市'
+        nameR='Reclass_id2011.tif'
+        layer=QgsVectorLayer(path,name,'ogr')
+        layerR=QgsRasterLayer(pathR,nameR)
+        if not layer.isValid():
+            raise IOError("Failed to open")
+        if not layerR.isValid():
+            raise IOError("Failed to open")
+        QgsProject.instance().addMapLayer(layer)
+        QgsProject.instance().addMapLayer(layerR)
+
+    def MainProcess(self):
+        # 栅格文件读取到数组
+        path='' # TIF文件路径
+        ds=gdal.Open(path)
+        band1=ds.ReadAsArray()
+        print(band1)
+
+
+
+        # 从数组写回栅格文件
