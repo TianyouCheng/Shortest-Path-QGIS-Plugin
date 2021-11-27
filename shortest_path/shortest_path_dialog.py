@@ -88,9 +88,12 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def MainProcess(self):
         # 栅格文件读取到数组
-        path='' # TIF文件路径
-        ds=gdal.Open(path)
-        band1=ds.ReadAsArray()
+        import PyQt5.QtWidgets as wd
+        sss = wd.QComboBox()
+        path = self.line_cost.text()    # TIF文件路径
+        ds = gdal.Open(path)
+        band1 = np.abs(ds.ReadAsArray())
+        nearby = self.cb_path.currentText()     # 邻接方式的文本
         print(band1)
 
 
