@@ -34,6 +34,9 @@ from PyQt5.QtCore import *
 from osgeo import ogr
 from osgeo import gdal
 import numpy as np
+from .coord_to_num import coord_to_num, num_to_coord
+from .aStar import a_star
+import time
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -65,7 +68,7 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
             ofd, filt = QFileDialog.getSaveFileName(self, '选择shapefile文件', './', 'Shapefile文件(*.shp);;ALL(*.*)')
             initobj.setText(ofd)
         else:
-            ofd, filt = QFileDialog.getOpenFileName(self, '选择shapefile文件', './', 'Shapefile文件(*.shp);;ALL(*.*)')
+            ofd, filt = QFileDialog.getOpenFileName(self, '选择TIF文件', './', 'TIF文件(*.tif);;ALL(*.*)')
             initobj.setText(ofd)
 
     def ProcessMindis(self):
@@ -88,14 +91,14 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def MainProcess(self):
         # 栅格文件读取到数组
-        import PyQt5.QtWidgets as wd
-        sss = wd.QComboBox()
         path = self.line_cost.text()    # TIF文件路径
         ds = gdal.Open(path)
         band1 = np.abs(ds.ReadAsArray())
         nearby = self.cb_path.currentText()     # 邻接方式的文本
-        print(band1)
-
-
+        start_time = time.time()
+        min_dist, route_list = a_star(band1, coord_to_num(ds, 116.1799, 40.1698),
+                                      coord_to_num(ds, 116.918, 40.525), nearby)
+        print('minimum cost distance:', min_dist)
+        print('time use:', time.time() - start_time, 'seconds')
 
         # 从数组写回栅格文件
