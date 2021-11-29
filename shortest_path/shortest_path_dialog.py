@@ -56,7 +56,6 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
 
         # 信号与槽函数
-        self.bt_loadsrc.clicked.connect(lambda: self.initlabel(self.line_src))
         self.bt_loadcost.clicked.connect(lambda: self.initlabel(self.line_cost))
         self.bt_export.clicked.connect(lambda: self.initlabel(self.line_export))
         self.bt_cancel.clicked.connect(self.close)
@@ -95,10 +94,22 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         ds = gdal.Open(path)
         band1 = np.abs(ds.ReadAsArray())
         nearby = self.cb_path.currentText()     # 邻接方式的文本
+
+        # 起止点坐标 TODO:判断为int型，判断在图幅内，弹出报错
+        # print(int(self.srcX.text()))
+        # print(int(self.srcY.text()))
+        # print(int(self.endX.text()))
+        # print(int(self.endY.text()))
+
+        # 进度条使用。进度条的取值范围为0-100
+        self.progressBar.setValue(0)
+
         start_time = time.time()
         min_dist, route_list = a_star(band1, coord_to_num(ds, 116.1799, 40.1698),
                                       coord_to_num(ds, 116.918, 40.525), nearby)
-        print('minimum cost distance:', min_dist)
-        print('time use:', time.time() - start_time, 'seconds')
+        self.tabWidget.setCurrentIndex(1) # 激活“结果”选项卡
+        self.textResult.setPlainText('Minimum cost distance:{}\n\nTime use:{} seconds'.format(min_dist,time.time() - start_time)) # 写入结果
+        self.progressBar.setValue(100) # 进度条进度
+
 
         # 从数组写回栅格文件
