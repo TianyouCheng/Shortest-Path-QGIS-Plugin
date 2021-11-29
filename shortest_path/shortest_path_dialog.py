@@ -92,6 +92,9 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         # 栅格文件读取到数组
         path = self.line_cost.text()    # TIF文件路径
         ds = gdal.Open(path)
+        if ds is None:
+            self.textResult.setPlainText('Error:\n\ncost raster NOT found!')
+            return
         band1 = np.abs(ds.ReadAsArray())
         nearby = self.cb_path.currentText()     # 邻接方式的文本
 
@@ -100,16 +103,63 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         # print(int(self.srcY.text()))
         # print(int(self.endX.text()))
         # print(int(self.endY.text()))
+        try:
+            src_p = coord_to_num(ds, float(self.srcX.text()), float(self.srcY.text()))
+            end_p = coord_to_num(ds, float(self.endX.text()), float(self.endY.text()))
+        except ValueError:
+            self.textResult.setPlainText('Error:\n\npoints coordinate must be number!')
+            return
+        if not (0 <= src_p[0] < band1.shape[0] and 0 <= src_p[1] < band1.shape[1]
+                and 0 <= end_p[0] < band1.shape[0] and 0 <= end_p[1] < band1.shape[1]):
+            self.textResult.setPlainText('Error:\n\nstart point or end point out of raster!')
+            return
 
         # 进度条使用。进度条的取值范围为0-100
         self.progressBar.setValue(0)
 
+        thread = MainWorkThread(band1, src_p, end_p, nearby,
+                                parent=self, progressBar=self.progressBar)
+
+        def mainwork_finish(min_dist, route_list):
+            '''计算完成后的操作'''
+            self.tabWidget.setCurrentIndex(1)  # 激活“结果”选项卡
+            self.textResult.setPlainText(
+                'Minimum cost distance:{}\n\nTime use:{} seconds'.format(min_dist, time.time() - start_time))  # 写入结果
+            self.progressBar.setValue(100)  # 进度条进度
+
+            # 从数组写回栅格文件
+            # output_path = self.line_export.text()  # 输出文件路径
+            #
+            # oDriver = ogr.GetDriverByName('ESRI Shapefile')
+            # oDs = oDriver.CreateDataSource(output_path)
+            # if os.path.exists(output_path):
+            #     oDriver.DeleteDataSource(output_path)
+            # outlayer = oDs.CreateLayer(os.path.splitext(output_path)[0], geom_type=ogr.wkbLineString)
+            # outlayer.CreateField(ogr.FieldDefn('cost', ogr.OFTReal))
+            #
+            # geom = ogr.CreateGeometryFromWkt(g.ToWkt())
+            # ft = ogr.Feature(outlayer.GetLayerDefn())
+            # ft.SetGeometry(geom)
+            # ft.SetField('cost', min_dist)
+            # outlayer.CreateFeature(ft)
+
+        thread.complete.connect(mainwork_finish)
         start_time = time.time()
-        min_dist, route_list = a_star(band1, coord_to_num(ds, 116.1799, 40.1698),
-                                      coord_to_num(ds, 116.918, 40.525), nearby)
-        self.tabWidget.setCurrentIndex(1) # 激活“结果”选项卡
-        self.textResult.setPlainText('Minimum cost distance:{}\n\nTime use:{} seconds'.format(min_dist,time.time() - start_time)) # 写入结果
-        self.progressBar.setValue(100) # 进度条进度
+        thread.start()
 
 
-        # 从数组写回栅格文件
+class MainWorkThread(QThread):
+    '''执行主函数的线程类'''
+    complete = pyqtSignal([float, list], [int, list])
+
+    def __init__(self, band, start_p, end_p, walk_type, parent=None, progressBar=None):
+        super(MainWorkThread, self).__init__(parent)
+        self.raster = band
+        self.start_p = start_p
+        self.end_p = end_p
+        self.work_type = walk_type
+        self.pBar = progressBar
+
+    def run(self) -> None:
+        min_dist, route_list = a_star(self.raster, self.start_p, self.end_p, self.work_type, self.pBar)
+        self.complete.emit(min_dist, route_list)

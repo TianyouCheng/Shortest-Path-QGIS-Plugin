@@ -26,7 +26,7 @@ class PointData:
         return hash(self.point)
 
 
-def a_star(raster: np.ndarray, start_p, end_p, walk_type):
+def a_star(raster: np.ndarray, start_p, end_p, walk_type, progressBar=None):
     '''
     使用a*算法（a_star）算法计算最短路径。
     到终点的估计距离 = 该点到终点经过的格子数（queen步为对角距离、rock步为曼哈顿距离） * raster平均成本
@@ -40,8 +40,9 @@ def a_star(raster: np.ndarray, start_p, end_p, walk_type):
     mean_cost = np.nanmean(raster)
     is_queen = walk_type[:5].lower() == 'queen'
     est_dist_func = queen_distance if is_queen else manhattan_distance
+    est_total = est_dist_func(start_p, end_p, mean_cost)  # 估计总距离多长，用于进度条更新
     # 开放列表：list，实际运算时需要用heap方法加速计算最小值
-    start = PointData(start_p, 0, 0, None)
+    start = PointData(start_p, 0, est_total, None)
     open_list = [start]
     open_dict = {start_p: start}
     close_list = {}   # 封闭列表，查表找到点的数据
@@ -52,6 +53,10 @@ def a_star(raster: np.ndarray, start_p, end_p, walk_type):
         now_p, value = now_pdata.point, now_pdata.min_dist
         open_dict.pop(now_p)
         close_list[now_p] = now_pdata
+        if progressBar is not None:
+            bar_value = int((est_total - now_pdata.est_dist) * 100 / est_total)
+            if bar_value > progressBar.value():
+                progressBar.setValue(bar_value if bar_value > 0 else 0)
         if now_p == end_p:
             break
         # nearby的内容为(点坐标: 回溯方向)
@@ -104,36 +109,3 @@ def queen_distance(p1, p2, mean_cost):
     delta_x = abs(p1[0] - p2[0])
     delta_y = abs(p1[1] - p2[1])
     return (min(delta_x, delta_y) * SQRT2 + abs(delta_x - delta_y)) * mean_cost
-
-
-
-from matplotlib import pyplot as plt
-from osgeo import gdal
-plt.rcParams['font.sans-serif'] = ['simhei']
-plt.rcParams['axes.unicode_minus'] = False
-
-import time
-
-
-if __name__ == '__main__':
-    raster = gdal.Open(r'data/dem.tif').ReadAsArray()
-    cost = (raster + np.min(raster)).astype(np.int64) ** 3
-    t = time.time()
-    distance, route_list = a_star(cost, (1200, 800), (2400, 2100), 'queen邻近')
-    print(time.time() - t)
-    # plt.figure(figsize=(8, 6))
-    # plt.imshow(raster)
-    # plt.xlim(500, 1500)
-    # plt.ylim(500, 1500)
-    # plt.title('原始')
-    # plt.colorbar()
-
-    plt.figure(figsize=(8, 6))
-    plt.imshow(raster)
-    plt.title('路径')
-    plt.colorbar()
-    xy = list(zip(*route_list))
-    plt.plot(xy[0], xy[1], color='red')
-    # plt.xlim(1000, 1500)
-    # plt.ylim(1200, 700)
-    plt.show()
