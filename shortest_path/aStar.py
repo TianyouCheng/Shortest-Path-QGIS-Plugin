@@ -32,21 +32,27 @@ class PointData:
         return hash(self.point)
 
 
-def a_star(raster: np.ndarray, start_p, end_p, walk_type, progressBar=None):
+def a_star(raster: np.ndarray, start_p, end_p, walk_type, progressBar=None, fast_mode=True):
     '''
     使用a*算法（a_star）算法计算最短路径。
-    到终点的估计距离 = 该点到终点经过的格子数（queen步为对角距离、rook步为曼哈顿距离） * raster平均成本
+    到终点的估计距离 = 该点到终点经过的格子数（queen步为对角距离、rook步为曼哈顿距离） * 估计权重
 
     :param raster: 成本栅格，numpy的矩阵格式
     :param start_p: 起点的点坐标(x, y)，已经转化为行列编号：x是第x列（从0开始），y是"从上往下"第y行（从0开始）
     :param end_p: 终点的点坐标(x, y)，同上
     :param walk_type: str, 表示是`queen邻近`还是`rook邻近`
+    :param fast_mode: bool, True则估计权重 = raster平均成本，False时估计权重 = 0.1分位数
     :returns: (最低成本距离, 路径列表)，路径以list列表形式返回，每个元素是经过的栅格点行列号(x, y)
     '''
-    mean_cost = np.nanmean(raster[min(start_p[0], end_p[0]):(max(start_p[0], end_p[0]) + 1),
-                                  min(start_p[1], end_p[1]):(max(start_p[1], end_p[1]) + 1)])
-    # mean_cost = np.nanquantile(raster[min(start_p[0], end_p[0]):(max(start_p[0], end_p[0]) + 1),
-    #                               min(start_p[1], end_p[1]):(max(start_p[1], end_p[1]) + 1)], q=0.1)
+    # 当整体计算量比较小（起点到终点的曼哈顿距离 < 1024），强制使用高质量搜索
+    if manhattan_distance(start_p, end_p, 1) < 1024:
+        fast_mode = False
+    if fast_mode:
+        mean_cost = np.nanmean(raster[min(start_p[0], end_p[0]):(max(start_p[0], end_p[0]) + 1),
+                                      min(start_p[1], end_p[1]):(max(start_p[1], end_p[1]) + 1)])
+    else:
+        mean_cost = np.nanquantile(raster[min(start_p[0], end_p[0]):(max(start_p[0], end_p[0]) + 1),
+                                          min(start_p[1], end_p[1]):(max(start_p[1], end_p[1]) + 1)], q=0.1)
     is_queen = walk_type[:5].lower() == 'queen'
     est_dist_func = queen_distance if is_queen else manhattan_distance
     est_total = est_dist_func(start_p, end_p, mean_cost)  # 估计总距离多长，用于进度条更新

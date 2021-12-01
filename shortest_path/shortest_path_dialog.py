@@ -127,21 +127,29 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
                 'Minimum cost distance:{}\n\nTime use:{} seconds'.format(min_dist, time.time() - start_time))  # 写入结果
             self.progressBar.setValue(100)  # 进度条进度
 
-            # 从数组写回栅格文件
-            # output_path = self.line_export.text()  # 输出文件路径
-            #
-            # oDriver = ogr.GetDriverByName('ESRI Shapefile')
-            # oDs = oDriver.CreateDataSource(output_path)
-            # if os.path.exists(output_path):
-            #     oDriver.DeleteDataSource(output_path)
-            # outlayer = oDs.CreateLayer(os.path.splitext(output_path)[0], geom_type=ogr.wkbLineString)
-            # outlayer.CreateField(ogr.FieldDefn('cost', ogr.OFTReal))
-            #
-            # geom = ogr.CreateGeometryFromWkt(g.ToWkt())
-            # ft = ogr.Feature(outlayer.GetLayerDefn())
-            # ft.SetGeometry(geom)
-            # ft.SetField('cost', min_dist)
-            # outlayer.CreateFeature(ft)
+            # 从数组写回shp文件，表示求解得到的路径
+            output_path = self.line_export.text()  # 输出文件路径
+            if output_path:
+
+                oDriver = ogr.GetDriverByName('ESRI Shapefile')
+                oDs = oDriver.CreateDataSource(output_path)
+                if os.path.exists(output_path):
+                    oDriver.DeleteDataSource(output_path)
+                outlayer = oDs.CreateLayer(os.path.splitext(output_path)[0], srs=ds.GetSpatialRef(),
+                           geom_type=ogr.wkbLineString)
+                outlayer.CreateField(ogr.FieldDefn('cost', ogr.OFTReal))
+                route_ = list(map(lambda p: num_to_coord(ds, p[0], p[1]), route_list))
+                geom = ogr.CreateGeometryFromWkt(f"LINESTRING({','.join([f'{p[0]} {p[1]}' for p in route_])})")
+                ft = ogr.Feature(outlayer.GetLayerDefn())
+                ft.SetGeometry(geom)
+                ft.SetField('cost', min_dist)
+                outlayer.CreateFeature(ft)
+                outlayer.SyncToDisk()
+
+                # shp文件加载到QGIS中
+                layer_name = os.path.splitext(os.path.basename(output_path))[0]
+                layer = QgsVectorLayer(output_path, layer_name, 'ogr')
+                QgsProject.instance().addMapLayer(layer)
 
         thread.complete.connect(mainwork_finish)
         start_time = time.time()
@@ -152,14 +160,16 @@ class MainWorkThread(QThread):
     '''执行主函数的线程类'''
     complete = pyqtSignal([float, list], [int, list])
 
-    def __init__(self, band, start_p, end_p, walk_type, parent=None, progressBar=None):
+    def __init__(self, band, start_p, end_p, walk_type, parent=None, progressBar=None, fast_mode=False):
         super(MainWorkThread, self).__init__(parent)
         self.raster = band
         self.start_p = start_p
         self.end_p = end_p
         self.work_type = walk_type
         self.pBar = progressBar
+        self.fast = fast_mode
 
     def run(self) -> None:
-        min_dist, route_list = a_star(self.raster, self.start_p, self.end_p, self.work_type, self.pBar)
+        min_dist, route_list = a_star(self.raster, self.start_p, self.end_p, self.work_type,
+                                      self.pBar, self.fast)
         self.complete.emit(min_dist, route_list)
