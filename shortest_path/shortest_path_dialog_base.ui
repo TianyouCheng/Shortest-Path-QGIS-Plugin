@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1073</width>
-    <height>646</height>
+    <width>1018</width>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0" colspan="2">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="0" column="0">
+     <item row="0" column="0" colspan="2">
       <widget class="QLabel" name="label">
        <property name="lineWidth">
         <number>1</number>
@@ -35,7 +35,7 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="2" rowspan="10">
+     <item row="0" column="3" rowspan="11">
       <widget class="QTabWidget" name="tabWidget">
        <property name="minimumSize">
         <size>
@@ -68,7 +68,7 @@
        </widget>
       </widget>
      </item>
-     <item row="1" column="0" colspan="2">
+     <item row="1" column="0" colspan="3">
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0">
         <widget class="QLabel" name="label_9">
@@ -131,7 +131,7 @@
        </item>
       </layout>
      </item>
-     <item row="2" column="0">
+     <item row="2" column="0" colspan="2">
       <widget class="QLabel" name="label_3">
        <property name="text">
         <string>成本输入（栅格数据）</string>
@@ -144,17 +144,23 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="3" column="0" colspan="2">
       <widget class="QLineEdit" name="line_cost"/>
      </item>
-     <item row="3" column="1">
+     <item row="3" column="2">
       <widget class="QPushButton" name="bt_loadcost">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>...</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
+     <item row="4" column="0" colspan="2">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>路径计算方式（可选）</string>
@@ -167,21 +173,7 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QComboBox" name="cb_path">
-       <item>
-        <property name="text">
-         <string>Queen邻接</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Rook邻接</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="6" column="0">
+     <item row="6" column="0" colspan="2">
       <widget class="QLabel" name="label_4">
        <property name="text">
         <string>最大距离（可选）</string>
@@ -194,7 +186,7 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="7" column="0" colspan="2">
       <widget class="QLineEdit" name="line_maxdis"/>
      </item>
      <item row="8" column="0">
@@ -210,14 +202,48 @@
        </property>
       </widget>
      </item>
-     <item row="9" column="0">
+     <item row="9" column="0" colspan="2">
       <widget class="QLineEdit" name="line_export"/>
      </item>
-     <item row="9" column="1">
+     <item row="9" column="2">
       <widget class="QPushButton" name="bt_export">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>...</string>
        </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QCheckBox" name="checkBoxs_FastMode">
+       <property name="text">
+        <string>快速模式</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QCheckBox" name="checkBox_MachineLang">
+       <property name="text">
+        <string>机器码加速</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QComboBox" name="cb_path">
+       <item>
+        <property name="text">
+         <string>Queen邻接</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Rook邻接</string>
+        </property>
+       </item>
       </widget>
      </item>
     </layout>
@@ -225,7 +251,7 @@
    <item row="1" column="0" colspan="2">
     <widget class="QProgressBar" name="progressBar">
      <property name="value">
-      <number>24</number>
+      <number>0</number>
      </property>
      <property name="textVisible">
       <bool>false</bool>

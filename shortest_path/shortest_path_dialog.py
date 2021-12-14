@@ -36,7 +36,10 @@ from osgeo import gdal
 import numpy as np
 from .coord_to_num import coord_to_num, num_to_coord
 from .aStar import a_star
+# from .aStarCTY import a_starCTY
+from .astarCTY import a_starCTY
 import time
+
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -70,24 +73,6 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
             ofd, filt = QFileDialog.getOpenFileName(self, '选择TIF文件', './', 'TIF文件(*.tif);;ALL(*.*)')
             initobj.setText(ofd)
 
-    def ProcessMindis(self):
-        '''
-        这个函数不执行
-        这是把矢量/栅格图加载到QGIS上的例子
-        '''
-        path='D:/CTY/研一/学习/GIS应用/插件作业/Testdata/地级市.shp'
-        pathR='D:/CTY/研一/学习/GIS应用/插件作业/Testdata/dem1.tif'
-        name='地级市'
-        nameR='Reclass_id2011.tif'
-        layer=QgsVectorLayer(path,name,'ogr')
-        layerR=QgsRasterLayer(pathR,nameR)
-        if not layer.isValid():
-            raise IOError("Failed to open")
-        if not layerR.isValid():
-            raise IOError("Failed to open")
-        QgsProject.instance().addMapLayer(layer)
-        QgsProject.instance().addMapLayer(layerR)
-
     def MainProcess(self):
         # 栅格文件读取到数组
         path = self.line_cost.text()    # TIF文件路径
@@ -118,7 +103,7 @@ class ShortestPathDialog(QtWidgets.QDialog, FORM_CLASS):
         self.progressBar.setValue(0)
 
         thread = MainWorkThread(band1, src_p, end_p, nearby,
-                                parent=self, progressBar=self.progressBar)
+                                parent=self, progressBar=self.progressBar,fast_mode=self.checkBoxs_FastMode.isChecked(),compile=self.checkBox_MachineLang.isChecked())
 
         def mainwork_finish(min_dist, route_list):
             '''计算完成后的操作'''
@@ -160,7 +145,7 @@ class MainWorkThread(QThread):
     '''执行主函数的线程类'''
     complete = pyqtSignal([float, list], [int, list])
 
-    def __init__(self, band, start_p, end_p, walk_type, parent=None, progressBar=None, fast_mode=False):
+    def __init__(self, band, start_p, end_p, walk_type, parent=None, progressBar=None, fast_mode=False ,compile=False):
         super(MainWorkThread, self).__init__(parent)
         self.raster = band
         self.start_p = start_p
@@ -168,8 +153,19 @@ class MainWorkThread(QThread):
         self.work_type = walk_type
         self.pBar = progressBar
         self.fast = fast_mode
+        self.compile=compile
 
     def run(self) -> None:
-        min_dist, route_list = a_star(self.raster, self.start_p, self.end_p, self.work_type,
+        if self.compile:
+            min_dist, route_list = a_starCTY(self.raster, self.start_p, self.end_p, self.work_type,
+                                      self.fast)
+            st=time.time()
+            min_dist, route_list = a_starCTY(self.raster, self.start_p, self.end_p, self.work_type,
+                                             self.fast)
+            Scd=time.time() - st
+            print('SecondRound Time Use:{}'.format(Scd))
+            self.pBar.enabled=False
+        else:
+            min_dist, route_list =a_star(self.raster, self.start_p, self.end_p, self.work_type,
                                       self.pBar, self.fast)
         self.complete.emit(min_dist, route_list)

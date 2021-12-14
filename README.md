@@ -1,6 +1,17 @@
 # Shortest-Path-QGIS-Plugin
 For GIS Presentation
 
+## 新增说明：“机器码加速”模式介绍
+### 说明
+    使用numba库对代码进行装饰，编译为机器码执行。
+### 安装方法
+    要在QGIS的python里安装库，在所有程序中搜OSGeo4W Shell，以管理员身份打开，可以安装第三方库。pip install -U numba
+### numba编译特点
+    numba支持有限的python结构，仅支持numpy库。因此程序中无法传入进度条对象。
+    目前去除了堆结构，如果自己实现，可以达到更加快速的效果。
+### numba官方文档
+    https://numba.readthedocs.io/en/stable/developer/index.html
+
 ## 参考文档
 ----
 ### 输入输出介绍
